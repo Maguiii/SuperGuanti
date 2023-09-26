@@ -11,6 +11,8 @@
   Probar si la grua funciona al = t que el juego
   Probar si los infras cambian cuando se levanta el bloque
 
+  En este programa las condiciones par llamar a la grua y a los infras esta distinto
+
   No discrimina por infras y leds
 */
 
@@ -63,6 +65,8 @@ int grados3 = 60;
 bool flagPulsoIncremento = FALSE;
 bool flagPulsoInicio = FALSE;
 bool flagHabilitacionInicio = FALSE;
+
+byte estadoBluetooth;
 
 void actualizarLcd();
 void juego();
@@ -198,7 +202,7 @@ void loop(){
         viajesSeleccionados++;
         flagHabilitacionInicio = TRUE;
       }
-      if(estadoLcd == 2){ //condicion para salir de este estado, le puse esta para no repetir la condicion del estado del lcd
+      if(estadoLcd == 2){ //al estado 2 del lcd se accede despues de que termine la cuenta regresiva
         juego(); //llamo para encender el primer led
         estadoPrograma = 2;
         tmin = 00;
@@ -210,24 +214,64 @@ void loop(){
     /* Si se reciben datos por bluetooth se llama a la grua
       * Al detectar que se pulso un infra se avanza al siguiente estado
     */
-      if(Serial.available()){
-        grua();
+    if(Serial.available() && digitalRead(infra1) == LOW && digitalRead(infra2) == LOW && digitalRead(infra3) == LOW && digitalRead(infra4) == LOW && digitalRead(infra5) == LOW){
+
+      estadoBluetooth = Bluetooth.read(); 
+
+      ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
+      if(estadoBluetooth == '1'){
+        grados1 = grados1 + 3;
+        if(grados1 >= 180){
+          grados1 = 180;
+        }
+        miservo_1.write(grados1); //,0 para velocidad 
       }
 
-      if(digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH){
-        estadoPrograma = 3;
+      if(estadoBluetooth == '3'){
+        grados1 = grados1 - 3;
+        if(grados1 <= 0){
+          grados1 = 0;
+        }
+        miservo_1.write(grados1);
       }
+
+      ///SERVO 2 -- ADELANTE ATRAS -- 5///
+      if(estadoBluetooth == '5'){
+        grados2 = grados2 + 3;
+        if(grados2 >= 180){
+          grados2 = 180;
+        }
+        miservo_2.write(grados2);
+      }
+
+      if(estadoBluetooth == '7'){
+        grados2 = grados2 - 4;
+        if(grados2 <= 0){
+          grados2 = 0;
+        }
+        miservo_2.write(grados2);
+      }
+      ///SERVO 3 -- ABAJO -- 6///
+      if(estadoBluetooth == '9'){    
+        grados3 = grados3 - 3;        
+        if(grados3<=0){
+          grados3 = 0;
+        }
+        miservo_3.write(grados3);
+      }  
+    }
+
+    if(Serial.available() && (digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH)){
+      grados3 = 90;
+      miservo_3.write(grados3);
+      estadoPrograma = 3;
+    }  
     break;
     case 3:
     /* Cuando el infra deja de detectar se cuenta como un viaje
     *  Mientras el infra este activado se llama a la grua para poder levantar el bloque
     *  Mientras el lcd diga A JUGAR se llama a la funcion juego para prender el sig led
     */
-      
-      if(digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH){
-        estadoPrograma = 3;
-        grua();
-      }
       if(digitalRead(infra1) == LOW && digitalRead(infra2) == LOW && digitalRead(infra3) == LOW && digitalRead(infra4) == LOW && digitalRead(infra5) == LOW){
         viajesRealizados++;
         if(estadoLcd == 2){
@@ -294,12 +338,14 @@ void actualizarLcd(){
     case 2:
       lcd.setCursor(0, 0);
       lcd.print("    A JUGAR!    ");
-      lcd.setCursor(4, 1);
+      lcd.setCursor(0,1);
+      lcd.print(estadoBluetooth);
+      /*lcd.setCursor(4, 1);
       lcd.print(thora);
       lcd.print(":");
       lcd.print(tmin);
       lcd.print(":");
-      lcd.print(tseg);
+      lcd.print(tseg);*/
 
       if(viajesRealizados != viajesSeleccionados)
         estadoLcd = 2;
@@ -393,14 +439,13 @@ void juego(){
 }
 
 void grua(){
-  byte estadoBluetooth = Bluetooth.read(); 
+/*
+  miservo_1.write(grados1);
+  miservo_2.write(grados2);
+  miservo_3.write(grados3);
+  
+  estadoBluetooth = Bluetooth.read(); 
 
-  ///ESTADO REPOSO //////////////////////
-  if(estadoBluetooth == '0'){
-    miservo_1.write(grados1);
-    miservo_2.write(grados2);
-    miservo_3.write(grados3);
-  }
   ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
   if(estadoBluetooth == '1'){
     grados1 = grados1 + 3;
@@ -441,7 +486,7 @@ void grua(){
       grados3 = 90;
     }
     miservo_3.write(grados3);
-  }  
+  }  */
 }
 
 void retencionInicio(){
