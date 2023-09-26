@@ -6,22 +6,12 @@
 #include <SoftwareSerial.h>
 
 /* 
-  Retencion de inicio para pulsadores inicio e incremento 
-  Pantalla lcd funcionando con todos los mensajes    
-  Deteccion de los cambios de estado de los infras        
-  Con la deteccion de los viajes se cambia el led
-  Al cambiar el led se esperan instrucciones para la grua
-  La grua funciona mientras los infras estan detectando
-  La grua funciona con mejor velocidad
-  Programa en bucle (al finalizar el juego se puede volver a empezar)
-  
-  Utiliza la libreria SofwareSerial (no esta chekeado que funcione con velocidad)
-  Todo lo declarado como Serial ahora se llama Bluetooth
-  
-  Agregar contador de pulsaciones por dedo
-  Disminuir el tiempo de retencion del boton cant viajes (incremento)
+  Programa viejo actualizado
 
-  Los pines estan declarados para funcionar en la plaqueta
+  Probar si la grua funciona al = t que el juego
+  Probar si los infras cambian cuando se levanta el bloque
+
+  No discrimina por infras y leds
 */
 
 #define FALSE 0
@@ -148,10 +138,10 @@ ISR(TIMER2_COMPA_vect){
         tseg++;
         if(tseg >= 60){
           tmin++;
-          tseg = 00;
+          tseg = 01;
           if(tmin >= 60){
             thora++;
-            tmin = 00;
+            tmin = 01;
           }
         }
       }
@@ -211,9 +201,9 @@ void loop(){
       if(estadoLcd == 2){ //condicion para salir de este estado, le puse esta para no repetir la condicion del estado del lcd
         juego(); //llamo para encender el primer led
         estadoPrograma = 2;
-        tmin = 0;
-        tseg = 0;
-        thora = 0;
+        tmin = 00;
+        tseg = 00;
+        thora = 00;
       }
     break;
     case 2:
@@ -405,6 +395,12 @@ void juego(){
 void grua(){
   byte estadoBluetooth = Bluetooth.read(); 
 
+  ///ESTADO REPOSO //////////////////////
+  if(estadoBluetooth == '0'){
+    miservo_1.write(grados1);
+    miservo_2.write(grados2);
+    miservo_3.write(grados3);
+  }
   ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
   if(estadoBluetooth == '1'){
     grados1 = grados1 + 3;
