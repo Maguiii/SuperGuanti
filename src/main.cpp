@@ -5,9 +5,7 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
-/* 
-  Programa que esta cargado en el proyecto, FUNCIONA 28/09/2023
-*/
+/*SUPER GUANTI --- UNA CREACION DE M.A.L. (Magalí, Aylen, Lautaro)*/
 
 #define FALSE 0
 #define TRUE 1
@@ -15,11 +13,11 @@
 #define incremento 13 
 #define inicio A0 //El que esta mas cercano al pin 1
 
-#define infra1 12  //led1 amarillo 16
-#define infra2 A3  //led2 violeta 8
-#define infra3 A2  //led3 naranja 4
-#define infra4 A1  //led4 rojo 2
-#define infra5 11  //led5 verde 1
+#define infra1 12
+#define infra2 A3
+#define infra3 A2
+#define infra4 A1 
+#define infra5 11  
 // 74hc595
 #define pinLatch 9   
 #define clockPin 10 
@@ -82,13 +80,13 @@ void setup(){
 
   Bluetooth.begin(57600); 
 
-  miservo_1.attach(3, 350, 2900); //servo base, derecha-izquierda (9)
+  miservo_1.attach(3, 350, 2900);
   miservo_1.write(grados1); 
 
-  miservo_2.attach(5, 1000, 2000); //servo de la derecha, adelante-atras (6)
+  miservo_2.attach(5, 1000, 2000); 
   miservo_2.write(grados2); 
 
-  miservo_3.attach(6, 1000, 2000); //servo de la izqueirda, abajo (11)
+  miservo_3.attach(6, 1000, 2000); 
   miservo_3.write(grados3);
   delay(500);
 
@@ -101,7 +99,7 @@ void setup(){
   lcd.print("  Bienvenido a  ");
   lcd.setCursor(0, 1);
   lcd.print("  Super Guanti  ");
-  delay(1000);  
+  delay(1500);  
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Una creacion de:");
@@ -113,15 +111,15 @@ void setup(){
   pinMode(incremento, INPUT);
   pinMode(inicio, INPUT);
 
-  pinMode(pinLatch, OUTPUT);
-  pinMode(clockPin, OUTPUT);
-  pinMode(dataPin, OUTPUT);
-
   pinMode(infra1, INPUT);
   pinMode(infra2, INPUT);
   pinMode(infra3, INPUT);
   pinMode(infra4, INPUT);
   pinMode(infra5, INPUT);
+
+  pinMode(pinLatch, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
 }
 
 ISR(TIMER2_COMPA_vect){ 
@@ -129,12 +127,12 @@ ISR(TIMER2_COMPA_vect){
    La cuenta no es exacta. Salida ejemplo: 4:30(salida arduino) 4:26(cronometro)
 */
   tauxmili++;
-  if (tauxmili >= 30) {
-    tIncremento++;
+  if(tauxmili >= 30){
+    tIncremento++; //variables asociadas a la retencion de los pulsadores
     tInicio++;
     taux++;
     
-    if(taux >= 60){
+    if(taux >= 60){ //variables asociadas a la cuenta regresiva y la cuenta general del juego
       tlcd--;
       taux = 0;
       if(estadoLcd == 2){
@@ -190,10 +188,10 @@ void loop(){
           }
         break;
       } 
-      retencionInicio(); //la mef para la retencion del pulsador inicio se llama varias veces en el programa
+      retencionInicio();
       
       /*Si el pulsador verdaderamente esta presionado, se incrementa una vez la variable
-       *Se puede dar inicio al juego luego de haber seleccionado minimo un viaje, es entonces que se habilita el boton inicio
+      * Se puede dar inicio al juego luego de haber seleccionado minimo un viaje, es entonces que se habilita el boton inicio
       */
       if(flagPulsoIncremento == TRUE){
         viajesSeleccionados++;
@@ -202,14 +200,14 @@ void loop(){
       if(estadoLcd == 2){ //al estado 2 del lcd se accede despues de que termine la cuenta regresiva
         juego(); //se encarga del encendido aleatorio de los leds
         estadoPrograma = 2;
-        tmin = 00;
-        tseg = 00;
-        thora = 00;
+        tmin = 0;
+        tseg = 0;
+        thora = 0;
       }
     break;
     case 2:
     /* Si se reciben datos por bluetooth se llama a la grua
-     * Al detectar que se pulso un infra se avanza al siguiente estado
+    *  Al detectar que se pulso un infra se avanza al siguiente estado
     */
       if(Bluetooth.available()){
         grua();
@@ -222,7 +220,7 @@ void loop(){
     case 3:
     /* Cuando el infra deja de detectar se cuenta como un viaje (es decir que un viaje es valido cuando el bloque se levanta)
     *  Mientras el infra este activado se llama a la grua para poder levantar el bloque
-    *  Mientras el lcd diga A JUGAR se llama a la funcion juego para prender el sig led
+    *  Mientras el lcd diga A JUGAR se llama a la funcion "juego" para prender el siguiente led
     */
       
       if(digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH){
@@ -239,8 +237,8 @@ void loop(){
     break;
     case 4:
     /*En este estado se entra desde la condicion anterior y desde las condiciones del lcd al llegar al ultimo caso
-      Se reinician todas las varibles definidas en el inicio para poder volver a jugar sin inconvenientes  
-      La variable flagHabilitacionInicio se desactiva para volver a ingresar la cantidad de viajes que se quieren
+    * Se reinician todas las varibles definidas en el inicio para poder volver a jugar sin inconvenientes  
+    * La variable flagHabilitacionInicio se desactiva para volver a ingresar la cantidad de viajes que se quieren
     */
       tmin = 0;
       tseg = 0;
@@ -259,7 +257,6 @@ void loop(){
     break;
   }
 }
-
 void actualizarLcd(){
   /* En esta MEF estan agrupadas todas las salidas en pantalla con sus respectivas condiciones  
    * para cambiar de estado
@@ -307,7 +304,7 @@ void actualizarLcd(){
       if(viajesRealizados != viajesSeleccionados)
         estadoLcd = 2;
       else{
-        tlcd = 5; 
+        tlcd = 7; 
         lcd.clear();
         estadoLcd = 3;
       }
@@ -325,7 +322,7 @@ void actualizarLcd(){
       lcd.print(tseg);
 
       if(tlcd <= 0){
-        tlcd = 5;
+        tlcd = 7;
         lcd.clear();
         estadoLcd = 4;
       }
@@ -344,17 +341,17 @@ void actualizarLcd(){
     break;
   }
 }
-
 void juego(){
 /* En esta funcion se cambia el led que esta encendido, con la condicion de que no se prenda dos veces el mismo
-  * Esta funcion es llamada cuando se detecta como valido un viaje  
-  * Luego de encender el led se va al estadoPrograma 2 donde se reciben instrucciones para la grua
-  */
+*  Cada caso enciende un led distinto poniendo distintos numeros en la salida del shift Register 74hc595
+*  Esta funcion es llamada cuando se detecta como valido un viaje  
+*  Luego de encender el led se va al estadoPrograma 2 donde se reciben instrucciones para la grua
+*/
   while(aleatorio == numAnterior){
     aleatorio = random(0, 5);
   }
   
-  switch (aleatorio)
+  switch(aleatorio)
   {
     case 0:
       digitalWrite(pinLatch, LOW);              
@@ -393,19 +390,21 @@ void juego(){
     break;
   }
 }
-
 void grua(){
+/* Al recibir los pines serial declarados con la libreria SoftwareSerial, 
+*  estos se guardan en la variable estadoBluetooth
+*  despues dependiendo del caracter recibido se le envian las instrucciones a los servos
+*/
   byte estadoBluetooth = Bluetooth.read(); 
 
   ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
   if(estadoBluetooth == '1'){
-    grados1 = grados1 + 3;
+    grados1 = grados1 + 3; //Los servos aumentan y disminuyen de a 3 grados para mejorar la velocidad
     if(grados1 >= 180){
       grados1 = 180;
     }
-    miservo_1.write(grados1); //,0 para velocidad 
+    miservo_1.write(grados1);
   }
-
   if(estadoBluetooth == '3'){
     grados1 = grados1 - 3;
     if(grados1 <= 0){
@@ -422,7 +421,6 @@ void grua(){
     }
     miservo_2.write(grados2);
   }
-
   if(estadoBluetooth == '7'){
     grados2 = grados2 - 4;
     if(grados2 <= 0){
@@ -430,7 +428,11 @@ void grua(){
     }
     miservo_2.write(grados2);
   }
+
   ///SERVO 3 -- ABAJO -- 6///
+  /*Este servo recibe solo una instruccion
+  * Cuando llega al punto minimo vuelve automaticamente a la posicion original
+  */
   if(estadoBluetooth == '9'){    
     grados3 = grados3 - 3;        
     if(grados3<=0){
@@ -439,7 +441,6 @@ void grua(){
     miservo_3.write(grados3);
   }  
 }
-
 void retencionInicio(){
   switch(estadoRetencionInicio){
     case 1:
@@ -471,7 +472,6 @@ void retencionInicio(){
     break;
   }
 }
-
 void apagarLeds(){
   digitalWrite(pinLatch, LOW);              
   shiftOut(dataPin, clockPin, MSBFIRST, 0); 
