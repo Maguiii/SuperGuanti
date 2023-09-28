@@ -36,25 +36,27 @@ LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
 SoftwareSerial Bluetooth(2, 4); //rx, tx
 
-int tIncremento = 0;
-int tInicio = 0;
-int tInfras = 0;
-int taux = 0;
-int tauxmili = 0;
-int tlcd = 0;
-int tmin = 0;
-int tseg = 0;
-int thora = 0;
+//son variables que funcionan en la funcion que se interrumpe por lo que se declaran como volatile
+volatile int tIncremento = 0;
+volatile int tInicio = 0;
+volatile int tInfras = 0;
+volatile int taux = 0;
+volatile int tauxmili = 0;
+volatile int tlcd = 0;
+volatile int tmin = 0;
+volatile int tseg = 0;
+volatile int thora = 0;
 
 int estadoPrograma = 1;
 int estadoRetencionIncremento = 1;
 int estadoRetencionInicio = 1;
-int estadoLcd = 0;
+volatile int estadoLcd = 0;
 
 int viajesSeleccionados = 0;
 int viajesRealizados = 0;
 int aleatorio = 0;
 int numAnterior = 0; 
+int estadoBluetooth;
 
 int grados1 = 0;
 int grados2 = 0;
@@ -63,14 +65,14 @@ int grados3 = 60;
 bool flagPulsoIncremento = FALSE;
 bool flagPulsoInicio = FALSE;
 bool flagHabilitacionInicio = FALSE;
-
-int estadoBluetooth;
+bool recibodatos = FALSE;
 
 void actualizarLcd();
 void juego();
 void grua();
 void retencionInicio();
 void apagarLeds();
+bool infrasLow();
 
 void setup(){
   //Inicializacion del Timer2
@@ -140,10 +142,10 @@ ISR(TIMER2_COMPA_vect){
         tseg++;
         if(tseg >= 60){
           tmin++;
-          tseg = 01;
+          tseg = 0;
           if(tmin >= 60){
             thora++;
-            tmin = 01;
+            tmin = 0;
           }
         }
       }
@@ -152,15 +154,16 @@ ISR(TIMER2_COMPA_vect){
 }
 
 void loop(){
-  
+
   actualizarLcd();
+
   
   switch(estadoPrograma){
     case 1:
     /* En este caso se hace la eleccion de la cantidad de viajes a realizar y se da inicio al juego
     * Las MEF son para la retencion de los pulsadores de incremento de viajes y de inicio 
     */
-      apagarLeds();
+      //apagarLeds();
 
       switch(estadoRetencionIncremento){
         case 1:
@@ -190,7 +193,7 @@ void loop(){
             estadoRetencionIncremento = 1;
           }
         break;
-      }
+      } 
       retencionInicio(); //la mef para la retencion del pulsador inicio se llama varias veces en el programa
       
       /*Si el pulsador verdaderamente esta presionado, se incrementa una vez la variable
@@ -201,7 +204,7 @@ void loop(){
         flagHabilitacionInicio = TRUE;
       }
       if(estadoLcd == 2){ //al estado 2 del lcd se accede despues de que termine la cuenta regresiva
-        juego(); //llamo para encender el primer led
+        //juego(); //llamo para encender el primer led
         estadoPrograma = 2;
         tmin = 00;
         tseg = 00;
@@ -212,11 +215,54 @@ void loop(){
     /* Si se reciben datos por bluetooth se llama a la grua
       * Al detectar que se pulso un infra se avanza al siguiente estado
     */
-      if(Serial.available()){
-        grua();
+      if(Bluetooth.available()){
+        recibodatos = TRUE;
+        estadoBluetooth = Bluetooth.read();
+
+        ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
+        if(estadoBluetooth == 'a'){
+          grados1 = grados1 + 3;
+          if(grados1 >= 180){
+            grados1 = 180;
+          }
+          miservo_1.write(grados1); //,0 para velocidad 
+        }
+
+        if(estadoBluetooth == 'b'){
+          grados1 = grados1 - 3;
+          if(grados1 <= 0){
+            grados1 = 0;
+          }
+          miservo_1.write(grados1);
+        }
+
+        ///SERVO 2 -- ADELANTE ATRAS -- 5///
+        if(estadoBluetooth == 'c'){
+          grados2 = grados2 + 3;
+          if(grados2 >= 180){
+            grados2 = 180;
+          }
+          miservo_2.write(grados2);
+        }
+
+        if(estadoBluetooth == 'd'){
+          grados2 = grados2 - 4;
+          if(grados2 <= 0){
+            grados2 = 0;
+          }
+          miservo_2.write(grados2);
+        }
+        ///SERVO 3 -- ABAJO -- 6///
+        if(estadoBluetooth == 'e'){    
+          grados3 = grados3 - 3;        
+          if(grados3<=0){
+            grados3 = 90;
+          }
+          miservo_3.write(grados3);
+        }  
       }
-      if(digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH){
-        estadoPrograma = 3;
+      else{
+        recibodatos = FALSE;
       }
     break;
     case 3:
@@ -224,17 +270,19 @@ void loop(){
     *  Mientras el infra este activado se llama a la grua para poder levantar el bloque
     *  Mientras el lcd diga A JUGAR se llama a la funcion juego para prender el sig led
     */
-      if(digitalRead(infra1) == HIGH || digitalRead(infra2) == HIGH || digitalRead(infra3) == HIGH || digitalRead(infra4) == HIGH || digitalRead(infra5) == HIGH){
-        estadoPrograma = 3;
-        grua();
-      }
-      if(digitalRead(infra1) == LOW && digitalRead(infra2) == LOW && digitalRead(infra3) == LOW && digitalRead(infra4) == LOW && digitalRead(infra5) == LOW){
+      grados3 = 90;
+      miservo_3.write(grados3); //el servo se levanta solo, ahora el touch solo sirve para bajar
+
+      viajesRealizados++;
+      juego();
+
+      /*
+      if(infrasLow()){ //para comprobar si efectivamente se levanto el cubo
         viajesRealizados++;
-        if(estadoLcd == 2){
-          juego();
-        }
-        estadoPrograma = 2;
-      }
+        juego();
+      }*/
+
+      estadoPrograma = 2; //despues de cambiar el led y contar el viaje que sucedio se vuelve a las instrucciones de la gru
     break;
     case 4:
     /*En este estado se entra desde la condicion anterior y desde las condiciones del lcd al llegar al ultimo caso
@@ -292,11 +340,20 @@ void actualizarLcd(){
       }
     break;
     case 2:
-      lcd.setCursor(0, 0);
-      lcd.print("    A JUGAR!    ");
-      lcd.setCursor(0,1);
+      
+      if(recibodatos == TRUE){
+        lcd.setCursor(0,0);
+        lcd.print("recibo datos");
+      }
+      else{
+        lcd.setCursor(0,0);
+        lcd.print("suerte");
+      }
+      lcd.setCursor(0, 1);
       lcd.print(estadoBluetooth);
-      /*lcd.setCursor(4, 1);
+      
+    
+      /*lcd.setCursor(4, 1) ;
       lcd.print(thora);
       lcd.print(":");
       lcd.print(tmin);
@@ -395,6 +452,7 @@ void juego(){
 }
 
 void grua(){
+/* ESTO DEBERIA FUNCIONAR PARA LOS CARACTERES a, b, c, d, e
 
   miservo_1.write(grados1);
   miservo_2.write(grados2);
@@ -404,9 +462,17 @@ void grua(){
 
   if(estadoBluetooth <= 96 && estadoBluetooth >= 102){
     estadoBluetooth = 97; //97 = a y la grua se va a mover hacia la derecha (cosa que no funciona con el touch)
+  }*/
+
+  if(Serial.available()){
+    estadoBluetooth = Bluetooth.read();
+    recibodatos = TRUE;
+  }
+  else{
+    estadoBluetooth = '1';
   }
   ///SERVO 1 -- DERECHA IZQUIERDA -- 3///
-  if(estadoBluetooth == 'a'){
+  if(estadoBluetooth == '1'){
     grados1 = grados1 + 3;
     if(grados1 >= 180){
       grados1 = 180;
@@ -414,7 +480,7 @@ void grua(){
     miservo_1.write(grados1); //,0 para velocidad 
   }
 
-  if(estadoBluetooth == 'b'){
+  if(estadoBluetooth == '3'){
     grados1 = grados1 - 3;
     if(grados1 <= 0){
       grados1 = 0;
@@ -423,7 +489,7 @@ void grua(){
   }
 
   ///SERVO 2 -- ADELANTE ATRAS -- 5///
-  if(estadoBluetooth == 'c'){
+  if(estadoBluetooth == '5'){
     grados2 = grados2 + 3;
     if(grados2 >= 180){
       grados2 = 180;
@@ -431,7 +497,7 @@ void grua(){
     miservo_2.write(grados2);
   }
 
-  if(estadoBluetooth == 'd'){
+  if(estadoBluetooth == '7'){
     grados2 = grados2 - 4;
     if(grados2 <= 0){
       grados2 = 0;
@@ -439,7 +505,7 @@ void grua(){
     miservo_2.write(grados2);
   }
   ///SERVO 3 -- ABAJO -- 6///
-  if(estadoBluetooth == 'e'){    
+  if(estadoBluetooth == '9'){    
     grados3 = grados3 - 3;        
     if(grados3<=0){
       grados3 = 90;
@@ -484,4 +550,13 @@ void apagarLeds(){
   digitalWrite(pinLatch, LOW);              
   shiftOut(dataPin, clockPin, MSBFIRST, 0); 
   digitalWrite(pinLatch, HIGH);
+}
+
+bool infrasLow(){
+  if(digitalRead(infra1) == LOW && digitalRead(infra2) == LOW && digitalRead(infra3) == LOW && digitalRead(infra4) == LOW && digitalRead(infra5) == LOW){
+      return TRUE;
+  }
+  else{
+    return FALSE;
+  }
 }
