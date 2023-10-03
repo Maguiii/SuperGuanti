@@ -11,7 +11,7 @@
 #define TRUE 1
 
 #define incremento 13 
-#define inicio A0 //El que esta mas cercano al pin 1
+#define inicio A0
 
 #define infra1 12
 #define infra2 A3
@@ -35,6 +35,7 @@ volatile int tInicio = 0;
 volatile int tInfras = 0;
 volatile int taux = 0;
 volatile int tauxmili = 0;
+volatile int tauxmiligrua = 0;
 volatile int tlcd = 0;
 volatile int tmin = 0;
 volatile int tseg = 0;
