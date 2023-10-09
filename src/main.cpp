@@ -35,7 +35,6 @@ volatile int tInicio = 0;
 volatile int tInfras = 0;
 volatile int taux = 0;
 volatile int tauxmili = 0;
-volatile int tauxmiligrua = 0;
 volatile int tlcd = 0;
 volatile int tmin = 0;
 volatile int tseg = 0;
@@ -58,7 +57,6 @@ int grados3 = 60;
 bool flagPulsoIncremento = FALSE;
 bool flagPulsoInicio = FALSE;
 bool flagHabilitacionInicio = FALSE;
-bool recibodatos = FALSE;
 
 void actualizarLcd();
 void juego();
@@ -112,15 +110,15 @@ void setup(){
   pinMode(incremento, INPUT);
   pinMode(inicio, INPUT);
 
+  pinMode(pinLatch, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+
   pinMode(infra1, INPUT);
   pinMode(infra2, INPUT);
   pinMode(infra3, INPUT);
   pinMode(infra4, INPUT);
   pinMode(infra5, INPUT);
-
-  pinMode(pinLatch, OUTPUT);
-  pinMode(clockPin, OUTPUT);
-  pinMode(dataPin, OUTPUT);
 }
 
 ISR(TIMER2_COMPA_vect){ 
@@ -160,6 +158,8 @@ void loop(){
     /* En este caso se hace la eleccion de la cantidad de viajes a realizar con el bloque y se da inicio al juego
     * Las MEF son para la retencion de los pulsadores de incremento de viajes y de inicio 
     */
+      apagarLeds();
+
       switch(estadoRetencionIncremento){
         case 1:
           flagPulsoIncremento = FALSE;
@@ -229,7 +229,7 @@ void loop(){
         grua();
       }
       if(digitalRead(infra1) == LOW && digitalRead(infra2) == LOW && digitalRead(infra3) == LOW && digitalRead(infra4) == LOW && digitalRead(infra5) == LOW){
-        viajesRealizados++;
+        contadorViajes++;
         if(estadoLcd == 2){
           juego();
         }
@@ -253,8 +253,6 @@ void loop(){
       estadoLcd = 0;
       flagHabilitacionInicio = FALSE;
       estadoPrograma = 1;
-
-      apagarLeds();
     break;
   }
 }
@@ -305,7 +303,7 @@ void actualizarLcd(){
       if(viajesRealizados != viajesSeleccionados)
         estadoLcd = 2;
       else{
-        tlcd = 7; 
+        tlcd = 5; 
         lcd.clear();
         estadoLcd = 3;
       }
@@ -323,7 +321,7 @@ void actualizarLcd(){
       lcd.print(tseg);
 
       if(tlcd <= 0){
-        tlcd = 7;
+        tlcd = 5;
         lcd.clear();
         estadoLcd = 4;
       }
